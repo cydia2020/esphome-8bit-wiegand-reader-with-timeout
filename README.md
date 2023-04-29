@@ -17,3 +17,8 @@ Paste the configuration file into your ESPHome interface. Change the various par
 # Known Issues.
 - The device may not respond if the ESP32 was reset by an OTA update, this seems to be a keypad specific issue, and may not happen with your hardware. Power-cycling the device can usually fix this.
 - Sometimes, ESPHome compiles the code just fine, but the binary file may not link. When this happens, use the "Clean Build Files" option in ESPHome and compile again.
+
+# Experiencing Problems?
+Feel free to open a GitHub issue. Please provide a log file of the reader's output and clearly describe the issue that you are facing. I will try my best to assist.
+
+:3
