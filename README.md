@@ -2,7 +2,7 @@
 An ESPHome configuration file with a built-in brute-force prevention timer for communicating with various wiegand readers
 
 # Why?
-Some Wiegand readers use non-"standard" communication protocols. (Worth noting is that there is no "standards" per se, but some protocols are more common than others.)
+Some Wiegand readers use non-"standard" communication protocols. (Worth noting is that there is no "standard" per se, but some protocols are more common than others.)
 
 This keypad is one such device. 
 <img src="/intended_keypad.png"  width=50% height=50%>
