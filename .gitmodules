@@ -1,0 +1,3 @@
+[submodule "custom_components"]
+	path = custom_components
+	url = https://github.com/cydia2020/custom_components
