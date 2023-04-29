@@ -1,0 +1,131 @@
+esphome:
+  name: keypad
+  # default timer switch to OFF on boot
+  on_boot:
+    then:
+      - switch.turn_off: timer
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# custom component to support 8-bit wiegand readers
+# for more information please look at https://github.com/cydia2020/custom_components/blob/master/components/wiegand/wiegand.cpp
+external_components:
+    - source: github://cydia2020/custom_components@master
+      components: [ wiegand ]
+      refresh: 1s
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "redacted"
+
+ota:
+  password: "redacted"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Keypad Fallback Hotspot"
+    password: "redacted"
+
+# wiegand handling
+wiegand:
+  - id: keypad
+    d0: GPIO34
+    d1: GPIO35
+    on_key:
+      then:
+      - if: 
+          # on some 8-bit keypads, the star key has a value of 10
+          condition: 
+            lambda: 'return x == 10;'
+          then:
+          - binary_sensor.template.publish:
+              id: star_key
+              state: ON
+          - delay: 3s
+          - binary_sensor.template.publish:
+              id: star_key
+              state: OFF
+    on_tag:
+      then:
+        if:
+          # check if the switch has timed out
+          condition:
+            - switch.is_off: timer
+          then:
+            - homeassistant.tag_scanned: !lambda 'return x.c_str();' # relay tag to HA
+            - switch.turn_on: timer # start timer after scan
+
+binary_sensor:
+    # star key sensor
+  - platform: template
+    id: star_key
+    name: "Keypad Star Key"
+    # timeout sensor
+  - platform: template
+    id: scanner_timeout
+    name: "Keypad Timedout"
+    device_class: safety
+    lambda: |-
+      if (id(timer).state) {
+        return true;
+      } else {
+        return false;
+      }
+
+
+key_collector:
+  - id: pincode_reader
+    source_id: keypad
+    # change this to suit your needs
+    min_length: 6 # min 6-digits
+    max_length: 10 # max 10-digits
+    end_keys: "#"
+    end_key_required: true
+    timeout: 5s
+    # change these to suit your needs
+    allowed_keys: '1234567890'
+    on_result:
+      then:
+        if:
+          # check if the switch has timed out
+          condition:
+            - switch.is_off: timer
+          then:
+            - homeassistant.tag_scanned: !lambda 'return x.c_str();' # relay tag or pin to HA
+            - switch.turn_on: timer # start timer after scan
+    on_timeout:
+      - logger.log: 'PIN Code Timed-Out'
+
+# ESP32 boards can also act as a BLE proxy
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms
+    active: false
+
+bluetooth_proxy:
+  active: true
+
+# an internal switch that turns off after 5 seconds to limit rate of RFID/keypad read
+switch:
+  - platform: template
+    id: timer
+    name: "Timer"
+    internal: True
+    optimistic: True
+    # turn off timer after timeout (5s)
+    on_turn_on:
+      then:
+        - delay: 5s
+        - switch.turn_off: timer
